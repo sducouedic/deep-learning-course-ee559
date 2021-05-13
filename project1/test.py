@@ -3,7 +3,11 @@ import torch
 
 
 def main():
-    train_set, train_input, train_target, test_set, test_input, test_target = generate_pair_sets(1000)
+    train_input, train_target, train_classes, \
+        test_input, test_target, test_classes = generate_pair_sets(1000)
+
+    # print(train_target.size())
+    print(train_target)
 
 
 if __name__ == '__main__':
