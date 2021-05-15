@@ -1,11 +1,10 @@
-import torch
-
 from torch import nn
 from torch.nn import functional as F
-from torch import optim
+
+from modelclass import Model
 
 
-class Baseline(nn.Module):
+class Baseline(Model):
     def __init__(self):
         nb_hidden = 200
         self.conv1 = nn.Conv2d(1, 32, kernel_size=5)
@@ -19,3 +18,5 @@ class Baseline(nn.Module):
         x = F.relu(self.fc1(x.view(-1, 256)))
         x = self.fc2(x)
         return x
+
+    # TODO implement training method
