@@ -10,12 +10,8 @@ def main():
     model1 = Baseline(generate_pair_sets)
     mRes1 = model1.train_and_test_rounds(number_rounds)
 
-    model2 = Baseline2(generate_pair_sets)
-    mRes2 = model2.train_and_test_rounds(number_rounds)
-
     plot_model_result(mRes1, number_rounds)
-    plot_model_result(mRes2, number_rounds)
-    plot_models_results_comparison([mRes1, mRes2], number_rounds, True)
+    plot_models_results_comparison([mRes1], number_rounds, True)
 
 
 if __name__ == '__main__':

@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from torch import optim
 
 from plot import ModelResult
 
@@ -40,7 +41,6 @@ class Model(nn.Module):
         self.epochs = nb_epochs
         self.batch_size = mini_batch_size
         self.lr = learning_rate
-        self.optimizer = None
 
     def train_and_test(self):
         """ The model runs a complete "round" consisting of the following steps :
@@ -89,43 +89,10 @@ class Model(nn.Module):
         return ModelResult(self.name, trains_err_rates, tests_err_rates, losses)
 
     def _train(self, train_input, train_target, train_classes):
-        if self.optimizer is None:
-            return self.__train1(train_input, train_target, train_classes)
-        else:
-            return self.__train2(train_input, train_target, train_classes)
-
-    # --- Private methods --- #
-
-    def __train1(self, train_input, train_target, train_classes):
-        """ Train the model """
+        """ Train the model (method can be override by child class) """
 
         criterion = nn.CrossEntropyLoss()
-
-        losses = []
-
-        for e in range(self.epochs):
-            acc_loss = 0
-            for b in range(0, train_input.size(0), self.batch_size):
-                output = self(train_input.narrow(0, b, self.batch_size))
-                loss = criterion(output, train_target.narrow(0, b, self.batch_size))
-                acc_loss = acc_loss + loss.item()
-
-                self.zero_grad()
-                loss.backward()
-
-                with torch.no_grad():
-                    for p in self.parameters():
-                        p -= self.lr * p.grad
-
-            losses.append(acc_loss)
-
-        return losses
-
-    def __train2(self, train_input, train_target, train_classes):
-        """ Train the model """
-
-        criterion = nn.CrossEntropyLoss()
-        optimizer = self.optimizer
+        optimizer = optim.SGD(self.parameters(), self.lr)
 
         losses = []
 
@@ -140,6 +107,8 @@ class Model(nn.Module):
                 losses.append(loss.data.item())
 
         return losses
+
+    # --- Private methods --- #
 
     def __compute_errors(self, data_input, data_target):
         """ Computes the number of errors produced by the model """
