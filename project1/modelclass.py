@@ -1,8 +1,8 @@
-from abc import abstractmethod
-
 import torch
 from torch import nn
 from torch import optim
+
+from plot import ModelResult
 
 
 class Model(nn.Module):
@@ -11,49 +11,88 @@ class Model(nn.Module):
 
         Attributes
         ----------
-        sets_size = 1000 : int
+        sets_size : int
             the size of both the training and the testing sets
 
-        mini_batch_size = 100 : int
-            size of a mini-batch
+        name : string
+            name of the model
 
         f_gen_data : function
             a function taking a an int and generating the training and testing data
+
+        batch_size : int
+            size of a mini-batch
 
         Methods
         -------
         train_and_test_round() :
             generates new data, train itself and compute performance statistics.
+
+        train_and_test_rounds(nb_rounds) :
+            does nb_rounds iteration of train_and_test_round
     """
 
     sets_size = 1000
 
-    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3):
+    def __init__(self, f_gen_data, name, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3):
         super().__init__()
         self.generate_data = f_gen_data
+        self.name = name
         self.epochs = nb_epochs
         self.batch_size = mini_batch_size
         self.lr = learning_rate
 
-    def train_and_test_round(self):
-        """ This method runs a "round" of generating new data, train with itself with the parameters, test the new
-            produced model and generating related statistics.
+    def train_and_test(self):
+        """ The model runs a complete "round" consisting of the following steps :
+            1. Generate new train and test data
+            2. Trains with the new generated data
+            3. Compute the train and test error rates and other performance statistics
+
+            Returns
+            -------
+            TODO complete doc
         """
+
         train_input, train_target, train_classes, \
             test_input, test_target, test_classes = self.generate_data(self.sets_size)
 
         losses = self._train(train_input, train_target, train_classes)
-        train_errors = self.__compute_train_errors(train_input, train_target)
-        test_errors = self.__compute_test_errors(test_input, test_target)
+        train_err_rate = self.__compute_errors(train_input, train_target)
+        test_err_rate = self.__compute_errors(test_input, test_target)
 
-        print('train_error {:.02f}% test_error {:.02f}%'.format(
-            train_errors / train_input.size(0) * 100,
-            test_errors / test_input.size(0) * 100
-        )
-        )
-        return losses, train_errors, test_errors
+        return train_err_rate, test_err_rate, losses
+
+    def train_and_test_rounds(self, nb_rounds):
+        """ Complete nb_rounds iterations of train_and_test and returns the train and test error
+            rates and other performance statistics in an ModelResult object
+
+            Parameter
+            ---------
+            nb_rounds : int
+                the number of round
+
+            Returns
+            -------
+            a ModelResult object containing the overall rounds performance statistics
+        """
+
+        trains_err_rates = []
+        tests_err_rates = []
+        losses = []
+
+        for i in range(nb_rounds):
+            trains_err_rate, tests_err_rate, losses_ = self.train_and_test()
+            trains_err_rates.append(trains_err_rate)
+            tests_err_rates.append(tests_err_rate)
+            losses += losses_
+
+        return ModelResult(self.name, trains_err_rates, tests_err_rates, losses)
+
+    # --- Private methods --- #
 
     def _train(self, train_input, train_target, train_classes):
+        """ Train the model """
+
         criterion = nn.CrossEntropyLoss()
 
         losses = []
@@ -76,20 +115,8 @@ class Model(nn.Module):
 
         return losses
 
-    def __compute_train_errors(self, train_input, train_target):
-        """ Computes the number of training errors """
-        return self.__compute_errors(train_input, train_target)
-
-    def __compute_test_errors(self, test_input, test_target):
-        """ Computes the number of testing errors """
-        return self.__compute_errors(test_input, test_target)
-
     def __compute_errors(self, data_input, data_target):
-        """ Computes the number of errors.
-
-            Runs the model with data_input as input, and compare the results
-            with data_target and count the number of mis-predictions.
-        """
+        """ Computes the number of errors produced by the model """
         nb_data_errors = 0
 
         for b in range(0, data_input.size(0), self.batch_size):
@@ -99,4 +126,4 @@ class Model(nn.Module):
                 if data_target[b + k] != predicted_classes[k]:
                     nb_data_errors = nb_data_errors + 1
 
-        return nb_data_errors
+        return 100 * nb_data_errors/data_input.size(0)

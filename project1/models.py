@@ -7,7 +7,7 @@ from modelclass import Model
 
 class Baseline(Model):
     def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3):
-        super().__init__(f_gen_data, nb_epochs, mini_batch_size, learning_rate)
+        super().__init__(f_gen_data, "Baseline", nb_epochs, mini_batch_size, learning_rate)
 
         self.fc1 = nn.Linear(392, 2)
 
