@@ -1,6 +1,5 @@
 import torch
 from torch import nn
-from torch import optim
 
 from plot import ModelResult
 
@@ -41,6 +40,7 @@ class Model(nn.Module):
         self.epochs = nb_epochs
         self.batch_size = mini_batch_size
         self.lr = learning_rate
+        self.optimizer = None
 
     def train_and_test(self):
         """ The model runs a complete "round" consisting of the following steps :
@@ -54,7 +54,7 @@ class Model(nn.Module):
         """
 
         train_input, train_target, train_classes, \
-            test_input, test_target, test_classes = self.generate_data(self.sets_size)
+        test_input, test_target, test_classes = self.generate_data(self.sets_size)
 
         losses = self._train(train_input, train_target, train_classes)
         train_err_rate = self.__compute_errors(train_input, train_target)
@@ -88,9 +88,15 @@ class Model(nn.Module):
 
         return ModelResult(self.name, trains_err_rates, tests_err_rates, losses)
 
+    def _train(self, train_input, train_target, train_classes):
+        if self.optimizer is None:
+            return self.__train1(train_input, train_target, train_classes)
+        else:
+            return self.__train2(train_input, train_target, train_classes)
+
     # --- Private methods --- #
 
-    def _train(self, train_input, train_target, train_classes):
+    def __train1(self, train_input, train_target, train_classes):
         """ Train the model """
 
         criterion = nn.CrossEntropyLoss()
@@ -115,6 +121,26 @@ class Model(nn.Module):
 
         return losses
 
+    def __train2(self, train_input, train_target, train_classes):
+        """ Train the model """
+
+        criterion = nn.CrossEntropyLoss()
+        optimizer = self.optimizer
+
+        losses = []
+
+        for e in range(self.epochs):
+            for b in range(0, train_input.size(0), self.batch_size):
+                output = self(train_input.narrow(0, b, self.batch_size))
+                loss = criterion(output, train_target.narrow(0, b, self.batch_size))
+                self.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+                losses.append(loss.data.item())
+
+        return losses
+
     def __compute_errors(self, data_input, data_target):
         """ Computes the number of errors produced by the model """
         nb_data_errors = 0
@@ -126,4 +152,4 @@ class Model(nn.Module):
                 if data_target[b + k] != predicted_classes[k]:
                     nb_data_errors = nb_data_errors + 1
 
-        return 100 * nb_data_errors/data_input.size(0)
+        return 100 * nb_data_errors / data_input.size(0)
