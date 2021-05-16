@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 
 
 class ModelResult:
-    def __init__(self, name, train_err_rates, test_err_rates, losses):
-        self.name = name
+    def __init__(self, result_id, train_err_rates, test_err_rates, losses):
+        self.id = result_id
         self.train_err_rates = train_err_rates
         self.test_err_rates = test_err_rates
         self.losses = losses
@@ -50,7 +50,8 @@ def plot_train_err_rates(model_results, nb_rounds):
     ax.set_ylim([0, max_err_rate + 0.05 * max_err_rate])
 
     for i, mod_res in enumerate(model_results):
-        ax.plot(mod_res.train_err_rates, color=colors[i % len(colors)], label=mod_res.name)
+        ax.plot(mod_res.train_err_rates, color=colors[i % len(colors)], label=mod_res.id)
+    ax.legend()
 
     plt.savefig("results/train_err" + concat_models_names(model_results) + ".png")
     plt.show()
@@ -64,7 +65,7 @@ def plot_train_err_rates_means(model_results):
 
     ax.set_ylabel('Train error rate')
 
-    names = [mod_res.name for mod_res in model_results]
+    names = [mod_res.id for mod_res in model_results]
     means = [mean(mod_res.train_err_rates) for mod_res in model_results]
     stds = [std(mod_res.train_err_rates) for mod_res in model_results]
 
@@ -87,7 +88,8 @@ def plot_test_err_rates(model_results, nb_rounds):
     ax.set_ylim([0, max_err_rate + 0.05 * max_err_rate])
 
     for i, mod_res in enumerate(model_results):
-        ax.plot(mod_res.test_err_rates, color=colors[i % len(colors)], label=mod_res.name)
+        ax.plot(mod_res.test_err_rates, color=colors[i % len(colors)], label=mod_res.id)
+    ax.legend()
 
     plt.savefig("results/test_err" + concat_models_names(model_results))
 
@@ -100,7 +102,7 @@ def plot_test_err_rates_means(model_results):
 
     ax.set_ylabel('Test error rate')
 
-    names = [mod_res.name for mod_res in model_results]
+    names = [mod_res.id for mod_res in model_results]
     means = [mean(mod_res.test_err_rates) for mod_res in model_results]
     stds = [std(mod_res.test_err_rates) for mod_res in model_results]
 
@@ -124,8 +126,9 @@ def plot_single_model_train_test_err_rates_comparison(model_result, nb_rounds):
 
     ax.plot(model_result.train_err_rates, color=colors[0], label="train")
     ax.plot(model_result.test_err_rates, color=colors[1], label="test")
+    ax.legend()
 
-    plt.savefig("results/train_test_err" + model_result.name)
+    plt.savefig("results/train_test_err" + model_result.id)
     plt.show()
 
 
@@ -135,14 +138,15 @@ def plot_losses(model_results):
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
 
-    ax.set_xlabel('Iteration', labelpad=len(model_results[0].losses))
+    ax.set_xlabel('Iteration')
     ax.set_ylabel('Loss')
 
     max_err_rate = max([max(mod_res.losses) for mod_res in model_results])
     ax.set_ylim([0, max_err_rate + 0.05 * max_err_rate])
 
     for i, mod_res in enumerate(model_results):
-        ax.plot(mod_res.losses, color=colors[i % len(colors)], label=mod_res.name)
+        ax.plot(mod_res.losses, color=colors[i % len(colors)], label=mod_res.id)
+    ax.legend()
 
     plt.savefig("results/losses_evolution" + concat_models_names(model_results))
     plt.show()
@@ -151,7 +155,7 @@ def plot_losses(model_results):
 def concat_models_names(model_results):
     name = ""
     for mod_res in model_results:
-        name += "_" + mod_res.name
+        name += "_" + mod_res.id
     return name
 
 

@@ -54,7 +54,7 @@ class Model(nn.Module):
         """
 
         train_input, train_target, train_classes, \
-        test_input, test_target, test_classes = self.generate_data(self.sets_size)
+            test_input, test_target, test_classes = self.generate_data(self.sets_size)
 
         losses = self._train(train_input, train_target, train_classes)
         train_err_rate = self.__compute_errors(train_input, train_target)
@@ -62,7 +62,7 @@ class Model(nn.Module):
 
         return train_err_rate, test_err_rate, losses
 
-    def train_and_test_rounds(self, nb_rounds):
+    def train_and_test_rounds(self, nb_rounds, result_id=None):
         """ Complete nb_rounds iterations of train_and_test and returns the train and test error
             rates and other performance statistics in an ModelResult object
 
@@ -86,7 +86,8 @@ class Model(nn.Module):
             tests_err_rates.append(tests_err_rate)
             losses += losses_
 
-        return ModelResult(self.name, trains_err_rates, tests_err_rates, losses)
+        res_id = self.name if result_id is None else result_id
+        return ModelResult(res_id, trains_err_rates, tests_err_rates, losses)
 
     def _train(self, train_input, train_target, train_classes):
         """ Train the model (method can be override by child class) """
