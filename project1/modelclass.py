@@ -2,10 +2,11 @@ from abc import abstractmethod
 
 import torch
 from torch import nn
+from torch import optim
 
 
 class Model(nn.Module):
-    """ Represent a deep network with the added capability to train itself and provide
+    """ A deep network with the added capability to train itself and provide
         statistics about the training and testing performances.
 
         Attributes
@@ -26,21 +27,54 @@ class Model(nn.Module):
     """
 
     sets_size = 1000
-    mini_batch_size = 100
 
-    def __init__(self, f_gen_data):
+    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3):
+        super().__init__()
         self.generate_data = f_gen_data
+        self.epochs = nb_epochs
+        self.batch_size = mini_batch_size
+        self.lr = learning_rate
 
     def train_and_test_round(self):
+        """ This method runs a "round" of generating new data, train with itself with the parameters, test the new
+            produced model and generating related statistics.
+        """
         train_input, train_target, train_classes, \
             test_input, test_target, test_classes = self.generate_data(self.sets_size)
 
-        self.train(train_input, train_target, train_classes)
-        # TODO complete
+        losses = self._train(train_input, train_target, train_classes)
+        train_errors = self.__compute_train_errors(train_input, train_target)
+        test_errors = self.__compute_test_errors(test_input, test_target)
 
-    @abstractmethod
+        print('train_error {:.02f}% test_error {:.02f}%'.format(
+            train_errors / train_input.size(0) * 100,
+            test_errors / test_input.size(0) * 100
+        )
+        )
+        return losses, train_errors, test_errors
+
     def _train(self, train_input, train_target, train_classes):
-        pass
+        criterion = nn.CrossEntropyLoss()
+
+        losses = []
+
+        for e in range(self.epochs):
+            acc_loss = 0
+            for b in range(0, train_input.size(0), self.batch_size):
+                output = self(train_input.narrow(0, b, self.batch_size))
+                loss = criterion(output, train_target.narrow(0, b, self.batch_size))
+                acc_loss = acc_loss + loss.item()
+
+                self.zero_grad()
+                loss.backward()
+
+                with torch.no_grad():
+                    for p in self.parameters():
+                        p -= self.lr * p.grad
+
+            losses.append(acc_loss)
+
+        return losses
 
     def __compute_train_errors(self, train_input, train_target):
         """ Computes the number of training errors """
@@ -58,10 +92,10 @@ class Model(nn.Module):
         """
         nb_data_errors = 0
 
-        for b in range(0, data_input.size(0), self.mini_batch_size):
-            output = self(data_input.narrow(0, b, self.mini_batch_size))
+        for b in range(0, data_input.size(0), self.batch_size):
+            output = self(data_input.narrow(0, b, self.batch_size))
             _, predicted_classes = torch.max(output, 1)
-            for k in range(self.mini_batch_size):
+            for k in range(self.batch_size):
                 if data_target[b + k] != predicted_classes[k]:
                     nb_data_errors = nb_data_errors + 1
 

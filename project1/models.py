@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 from torch.nn import functional as F
 
@@ -5,18 +6,14 @@ from modelclass import Model
 
 
 class Baseline(Model):
-    def __init__(self):
-        nb_hidden = 200
-        self.conv1 = nn.Conv2d(1, 32, kernel_size=5)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=5)
-        self.fc1 = nn.Linear(256, nb_hidden)
-        self.fc2 = nn.Linear(nb_hidden, 10)
+    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3):
+        super().__init__(f_gen_data, nb_epochs, mini_batch_size, learning_rate)
+
+        self.fc1 = nn.Linear(392, 2)
 
     def forward(self, x):
-        x = F.relu(F.max_pool2d(self.conv1(x), kernel_size=3, stride=3))
-        x = F.relu(F.max_pool2d(self.conv2(x), kernel_size=2, stride=2))
-        x = F.relu(self.fc1(x.view(-1, 256)))
-        x = self.fc2(x)
-        return x
+        nb_sample = x.size()[0]
 
-    # TODO implement training method
+        x = self.fc1(x.view(nb_sample, -1))
+        x = F.relu(x)
+        return x
