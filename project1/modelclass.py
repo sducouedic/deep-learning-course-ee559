@@ -1,8 +1,8 @@
+from abc import abstractmethod
+
 import torch
 from torch import nn
 from torch import optim
-
-from plot import ModelResult
 
 
 class Model(nn.Module):
@@ -16,6 +16,9 @@ class Model(nn.Module):
 
         name : string
             name of the model
+
+        useAuxiliary : Boolean
+            determines if the model uses auxiliary loss or not
 
         f_gen_data : function
             a function taking a an int and generating the training and testing data
@@ -34,13 +37,17 @@ class Model(nn.Module):
 
     sets_size = 1000
 
-    def __init__(self, f_gen_data, name, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3):
+    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3):
         super().__init__()
         self.generate_data = f_gen_data
-        self.name = name
         self.epochs = nb_epochs
         self.batch_size = mini_batch_size
         self.lr = learning_rate
+        self.useAuxiliary = False  # Need to resize tensors if True
+
+    @abstractmethod
+    def reset(self):
+        """ Reinitialize the weights of the model, need to be redefined"""
 
     def train_and_test(self):
         """ The model runs a complete "round" consisting of the following steps :
@@ -50,11 +57,22 @@ class Model(nn.Module):
 
             Returns
             -------
-            TODO complete doc
+            train_err_rate : double
+
+            test_err_rate :double
+
+            losses : array[double]
+                the loss at each iteration
         """
 
         train_input, train_target, train_classes, \
             test_input, test_target, test_classes = self.generate_data(self.sets_size)
+
+        if self.useAuxiliary:
+            train_input = train_input.view(-1, 1, 14, 14)
+            train_classes = train_classes.view(-1)
+            test_input = test_input.view(-1, 1, 14, 14)
+            test_classes = test_classes.view(-1)
 
         losses = self._train(train_input, train_target, train_classes)
         train_err_rate = self.__compute_errors(train_input, train_target)
@@ -62,52 +80,38 @@ class Model(nn.Module):
 
         return train_err_rate, test_err_rate, losses
 
-    def train_and_test_rounds(self, nb_rounds, result_id=None):
-        """ Complete nb_rounds iterations of train_and_test and returns the train and test error
-            rates and other performance statistics in an ModelResult object
-
-            Parameter
-            ---------
-            nb_rounds : int
-                the number of round
-
-            Returns
-            -------
-            a ModelResult object containing the overall rounds performance statistics
-        """
-
-        trains_err_rates = []
-        tests_err_rates = []
-        losses = []
-
-        for i in range(nb_rounds):
-            trains_err_rate, tests_err_rate, losses_ = self.train_and_test()
-            trains_err_rates.append(trains_err_rate)
-            tests_err_rates.append(tests_err_rate)
-            losses += losses_
-
-        res_id = self.name if result_id is None else result_id
-        return ModelResult(res_id, trains_err_rates, tests_err_rates, losses)
-
     def _train(self, train_input, train_target, train_classes):
-        """ Train the model (method can be override by child class) """
+            """ Train the model """
+            criterion = nn.CrossEntropyLoss()
+            optimizer = optim.SGD(self.parameters(), self.lr)
 
-        criterion = nn.CrossEntropyLoss()
-        optimizer = optim.SGD(self.parameters(), self.lr)
+            losses = []
 
-        losses = []
+            for e in range(self.epochs):
+                for b in range(0, train_input.size(0), self.batch_size):
 
-        for e in range(self.epochs):
-            for b in range(0, train_input.size(0), self.batch_size):
-                output = self(train_input.narrow(0, b, self.batch_size))
-                loss = criterion(output, train_target.narrow(0, b, self.batch_size))
-                self.zero_grad()
-                loss.backward()
-                optimizer.step()
+                    if self.useAuxiliary:
+                        digit_class, final_class = self(train_input.narrow(0, b, self.batch_size))
+                        loss = criterion(
+                            final_class,
+                            train_target.narrow(0, b // 2, self.batch_size // 2)
+                        ) + criterion(
+                            digit_class,
+                            train_classes.narrow(0, b, self.batch_size)
+                        )
 
-                losses.append(loss.data.item())
+                    else:
+                        final_class = self(train_input.narrow(0, b, self.batch_size))
+                        loss = criterion(final_class, train_target.narrow(0, b, self.batch_size))
 
-        return losses
+                    self.zero_grad()
+                    loss.backward()
+                    optimizer.step()
+
+                    losses.append(loss.data.item())
+
+            return losses
+
 
     # --- Private methods --- #
 
@@ -116,10 +120,19 @@ class Model(nn.Module):
         nb_data_errors = 0
 
         for b in range(0, data_input.size(0), self.batch_size):
+
             output = self(data_input.narrow(0, b, self.batch_size))
+
+            if self.useAuxiliary:
+                output = output[1]
+
             _, predicted_classes = torch.max(output, 1)
-            for k in range(self.batch_size):
-                if data_target[b + k] != predicted_classes[k]:
+
+            target_b = b if not self.useAuxiliary else b // 2
+            target_batch_size = self.batch_size if not self.useAuxiliary else self.batch_size // 2
+
+            for k in range(target_batch_size):
+                if data_target[target_b + k] != predicted_classes[k]:
                     nb_data_errors = nb_data_errors + 1
 
         return 100 * nb_data_errors / data_input.size(0)
