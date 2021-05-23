@@ -67,7 +67,7 @@ class Model(nn.Module):
         """
 
         train_input, train_target, train_classes, \
-        test_input, test_target, test_classes = self.generate_data(self.sets_size)
+            test_input, test_target, test_classes = self.generate_data(self.sets_size)
 
         if self.useAuxiliary:
             train_input = train_input.view(-1, 1, 14, 14)

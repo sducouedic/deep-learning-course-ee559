@@ -27,10 +27,7 @@ class Baseline(Model):
         return x
 
     def reset(self):
-        self.fc1.reset_parameters()
-        self.fc2.reset_parameters()
-        self.fc3.reset_parameters()
-        self.fc4.reset_parameters()
+        self.__init__(self.generate_data, self.epochs, self.batch_size, self.lr)
 
 
 # TODO make this work and compare
@@ -58,10 +55,7 @@ class Baseline2(Model):
         return x
 
     def reset(self):
-        self.fc1.reset_parameters()
-        self.fc2.reset_parameters()
-        self.fc3.reset_parameters()
-        self.fc4.reset_parameters()
+        self.__init__(self.generate_data, self.epochs, self.batch_size, self.lr)
 
 
 class Auxiliary(Model):
@@ -89,54 +83,86 @@ class Auxiliary(Model):
         return digit_class, final_class
 
     def reset(self):
-        self.fc1.reset_parameters()
-        self.fc2.reset_parameters()
-        self.fc3.reset_parameters()
-        self.fc4.reset_parameters()
+        self.__init__(self.generate_data, self.epochs, self.batch_size, self.lr)
 
 
 # TODO is this really weight sharing?
 # TODO add max_pooling
+# class CNN(Model):
+#     """ This model implements weight sharing """
+#
+#     def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3):
+#         super().__init__(f_gen_data, nb_epochs, mini_batch_size, learning_rate)
+#
+#         self.conv1 = nn.Conv2d(2, 16, kernel_size=5, padding=3)
+#         self.bn1 = nn.BatchNorm2d(16)
+#
+#         self.conv2 = nn.Conv2d(16, 20, kernel_size=5, padding=3)
+#         self.bn2 = nn.BatchNorm2d(20)
+#
+#         self.fc1 = nn.Linear(500, 200)
+#         self.fc2 = nn.Linear(200, 10)
+#         self.fc3 = nn.Linear(10, 2)
+#
+#     def forward(self, x):
+#         # conv1
+#         x = F.relu(self.conv1(x))
+#         x = self.bn1(x)
+#         x = F.max_pool2d(x, kernel_size=2)
+#
+#         # conv2
+#         x = F.relu(self.conv2(x))
+#         x = self.bn2(x)
+#         x = F.max_pool2d(x, kernel_size=2)
+#
+#         # flatten the input
+#         x = x.view(x.size()[0], -1)
+#
+#         # fc1
+#         x = self.fc1(x)
+#         x = F.relu(x)
+#
+#         # fc2
+#         x = F.relu(self.fc2(x))
+#
+#         # fc3
+#         x = F.relu(self.fc3(x))
+#         return x
+
 class CNN(Model):
-    """ This model implements weight sharing """
+    """
+    Models with weight sharing.
+    """
 
     def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3):
         super().__init__(f_gen_data, nb_epochs, mini_batch_size, learning_rate)
 
         self.conv1 = nn.Conv2d(2, 16, kernel_size=5, padding=3)
+        self.conv2 = nn.Conv2d(16, 20, kernel_size=3, padding=3)
         self.bn1 = nn.BatchNorm2d(16)
-
-        self.conv2 = nn.Conv2d(16, 20, kernel_size=5, padding=3)
-        self.bn2 = nn.BatchNorm2d(20)  # TODO discuss that
-
-        self.fc1 = nn.Linear(500, 200)
-        self.fc2 = nn.Linear(200, 10)
-        self.fc3 = nn.Linear(10, 2)
+        self.bn2 = nn.BatchNorm2d(20)
+        self.bn3 = nn.BatchNorm1d(720)
+        self.fc1 = nn.Linear(720, 100)
+        self.fc2 = nn.Linear(100, 2)
 
     def forward(self, x):
-        # conv1
-        x = F.relu(self.conv1(x))
-        x = self.bn1(x)
-        x = F.max_pool2d(x, kernel_size=2)
+        """
+        General structure of one layer:
+            Input -> Convolution -> BatchNorm -> Activation(ReLu) -> Maxpooling -> Output
+        """
+        # 1st layer
+        x = F.max_pool2d(F.relu(self.bn1(self.conv1(x))), kernel_size=2)
+        # 2nd layer
+        x = F.max_pool2d(F.relu(self.bn2(self.conv2(x))), kernel_size=2)
+        # 3rd layer
+        x = F.relu(self.fc1(self.bn3(x.view(x.size()[0], -1))))
+        # 4th layer
+        x = self.fc2(F.dropout(x))
 
-        # conv2
-        x = F.relu(self.conv2(x))
-        x = self.bn2(x)
-        x = F.max_pool2d(x, kernel_size=2)
-
-        # flatten the input
-        x = x.view(x.size()[0], -1)
-
-        # fc1
-        x = self.fc1(x)
-        x = F.relu(x)
-
-        # fc2
-        x = F.relu(self.fc2(x))
-
-        # fc3
-        x = F.relu(self.fc3(x))
         return x
+
+    def reset(self):
+        self.__init__(self.generate_data, self.epochs, self.batch_size, self.lr)
 
 
 class CNN_Auxiliary(Model):
@@ -173,13 +199,6 @@ class CNN_Auxiliary(Model):
 
         return digit_class, final_class
 
-    def reset(self):
-        self.conv1.reset_parameters()
-        self.conv2.reset_parameters()
-        self.fc1.reset_parameters()
-        self.fc2.reset_parameters()
-        self.fc3.reset_parameters()
-
     def _train(self, train_input, train_target, train_classes):
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.SGD(self.parameters(), self.lr)
@@ -203,3 +222,6 @@ class CNN_Auxiliary(Model):
                 losses.append(loss.data.item())
 
         return losses
+
+    def reset(self):
+        self.__init__(self.generate_data, self.epochs, self.batch_size, self.lr)
