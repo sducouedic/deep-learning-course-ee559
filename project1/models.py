@@ -103,32 +103,39 @@ class CNN(Model):
     def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3):
         super().__init__(f_gen_data, nb_epochs, mini_batch_size, learning_rate)
 
-        self.conv1 = nn.Conv2d(2, 32, kernel_size=5)
-        self.bn1 = nn.BatchNorm2d(32)
+        self.conv1 = nn.Conv2d(2, 16, kernel_size=5, padding=3)
+        self.bn1 = nn.BatchNorm2d(16)
 
-        self.conv2 = nn.Conv2d(32, 16, kernel_size=5)
-        self.bn2 = nn.BatchNorm2d(16)
+        self.conv2 = nn.Conv2d(16, 20, kernel_size=5, padding=3)
+        self.bn2 = nn.BatchNorm2d(20)  # TODO discuss that
 
-        self.fc1 = nn.Linear(576, 200)
+        self.fc1 = nn.Linear(500, 200)
         self.fc2 = nn.Linear(200, 10)
         self.fc3 = nn.Linear(10, 2)
 
     def forward(self, x):
-        x = self.conv1(x)
+        # conv1
+        x = F.relu(self.conv1(x))
         x = self.bn1(x)
-        x = F.relu(x)
+        x = F.max_pool2d(x, kernel_size=2)
 
-        x = self.conv2(x)
+        # conv2
+        x = F.relu(self.conv2(x))
         x = self.bn2(x)
-        x = F.relu(x)
+        x = F.max_pool2d(x, kernel_size=2)
 
+        # flatten the input
         x = x.view(x.size()[0], -1)
+
+        # fc1
         x = self.fc1(x)
         x = F.relu(x)
 
-        x = self.fc2(x)
-        x = self.fc3(x)
-        x = F.relu(x)
+        # fc2
+        x = F.relu(self.fc2(x))
+
+        # fc3
+        x = F.relu(self.fc3(x))
         return x
 
 

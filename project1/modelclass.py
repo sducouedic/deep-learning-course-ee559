@@ -2,6 +2,7 @@ from abc import abstractmethod
 
 import torch
 from torch import nn
+from torch.nn import functional as F
 from torch import optim
 
 
@@ -66,7 +67,7 @@ class Model(nn.Module):
         """
 
         train_input, train_target, train_classes, \
-            test_input, test_target, test_classes = self.generate_data(self.sets_size)
+        test_input, test_target, test_classes = self.generate_data(self.sets_size)
 
         if self.useAuxiliary:
             train_input = train_input.view(-1, 1, 14, 14)
@@ -81,37 +82,36 @@ class Model(nn.Module):
         return train_err_rate, test_err_rate, losses
 
     def _train(self, train_input, train_target, train_classes):
-            """ Train the model """
-            criterion = nn.CrossEntropyLoss()
-            optimizer = optim.SGD(self.parameters(), self.lr)
+        """ Train the model """
+        criterion = nn.CrossEntropyLoss()
+        optimizer = optim.SGD(self.parameters(), self.lr)
 
-            losses = []
+        losses = []
 
-            for e in range(self.epochs):
-                for b in range(0, train_input.size(0), self.batch_size):
+        for e in range(self.epochs):
+            for b in range(0, train_input.size(0), self.batch_size):
 
-                    if self.useAuxiliary:
-                        digit_class, final_class = self(train_input.narrow(0, b, self.batch_size))
-                        loss = criterion(
-                            final_class,
-                            train_target.narrow(0, b // 2, self.batch_size // 2)
-                        ) + criterion(
-                            digit_class,
-                            train_classes.narrow(0, b, self.batch_size)
-                        )
+                if self.useAuxiliary:
+                    digit_class, final_class = self(train_input.narrow(0, b, self.batch_size))
+                    loss = criterion(
+                        final_class,
+                        train_target.narrow(0, b // 2, self.batch_size // 2)
+                    ) + criterion(
+                        digit_class,
+                        train_classes.narrow(0, b, self.batch_size)
+                    )
 
-                    else:
-                        final_class = self(train_input.narrow(0, b, self.batch_size))
-                        loss = criterion(final_class, train_target.narrow(0, b, self.batch_size))
+                else:
+                    final_class = self(train_input.narrow(0, b, self.batch_size))
+                    loss = criterion(final_class, train_target.narrow(0, b, self.batch_size))
 
-                    self.zero_grad()
-                    loss.backward()
-                    optimizer.step()
+                self.zero_grad()
+                loss.backward()
+                optimizer.step()
 
-                    losses.append(loss.data.item())
+                losses.append(loss.data.item())
 
-            return losses
-
+        return losses
 
     # --- Private methods --- #
 
