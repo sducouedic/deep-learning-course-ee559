@@ -14,16 +14,24 @@ class Baseline(Model):
     def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3):
         super().__init__(f_gen_data, nb_epochs, mini_batch_size, learning_rate)
 
-        self.fc1 = nn.Linear(392, 200)
+        self.fc1 = nn.Linear(98, 200)
+        self.bn1 = nn.BatchNorm1d(200)
+        self.drop = nn.Dropout(0.5)
         self.fc2 = nn.Linear(200, 100)
-        self.fc3 = nn.Linear(100, 10)
-        self.fc4 = nn.Linear(10, 2)
+        self.bn2 = nn.BatchNorm1d(100)
+        self.fc3 = nn.Linear(100,100)
+        self.bn3 = nn.BatchNorm1d(100)
+        self.fc4 = nn.Linear(100, 10)
+        self.fc5 = nn.Linear(10, 2)
 
     def forward(self, x):
-        x = F.relu(self.fc1(x.view(x.size()[0], -1)))
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
+        x = F.max_pool2d(x, kernel_size=2)
+        x = F.relu(self.bn1(self.fc1(x.view(x.size()[0], -1))))
+        x = self.drop(x)
+        x = F.relu(self.bn2(self.fc2(x)))
+        x = F.relu(self.bn3(self.fc3(x)))
         x = F.relu(self.fc4(x))
+        x = self.fc5(x)
         return x
 
     def reset(self):
@@ -34,7 +42,7 @@ class Baseline(Model):
 class Baseline2(Model):
     """ The Baseline model is composed only of fully-connected layers. """
 
-    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3):
+    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=50, learning_rate=1e-3):
         super().__init__(f_gen_data, nb_epochs, mini_batch_size, learning_rate)
 
         self.fc1 = nn.Linear(392, 200)
@@ -45,10 +53,9 @@ class Baseline2(Model):
         self.fc4 = nn.Linear(10, 2)
 
     def forward(self, x):
+        x = F.max_pool1d(x, kernel_size=2)
         x = F.relu(self.bn1(self.fc1(x.view(x.size()[0], -1))))
-        x = F.max_pool1d(x, kernel_size=2)
         x = F.relu(self.bn2(self.fc2(x)))
-        x = F.max_pool1d(x, kernel_size=2)
 
         x = F.relu(self.fc3(x))
         x = F.relu(self.fc4(x))
@@ -61,7 +68,7 @@ class Baseline2(Model):
 class Auxiliary(Model):
     """ This model extends the baseline model by adding auxiliary loss """
 
-    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3):
+    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=2e-2):
         super().__init__(f_gen_data, nb_epochs, mini_batch_size, learning_rate)
 
         # tell parent class we use auxiliary loss
@@ -137,13 +144,21 @@ class CNN(Model):
     def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3):
         super().__init__(f_gen_data, nb_epochs, mini_batch_size, learning_rate)
 
-        self.conv1 = nn.Conv2d(2, 16, kernel_size=5, padding=3)
-        self.conv2 = nn.Conv2d(16, 20, kernel_size=3, padding=3)
+        self.conv1 = nn.Conv2d(2, 16, kernel_size=5, padding=2)
+        self.conv2 = nn.Conv2d(16, 64, kernel_size=3, padding=3)
+        self.drop = nn.Dropout(0.1)
+        self.conv3 = nn.Conv2d(64, 32, kernel_size = 3, padding = 3)
+        self.drop1 = nn.Dropout(0.3)
+        self.conv4 = nn.Conv2d(32, 16, kernel_size = 5, padding = 3)
         self.bn1 = nn.BatchNorm2d(16)
-        self.bn2 = nn.BatchNorm2d(20)
-        self.bn3 = nn.BatchNorm1d(720)
-        self.fc1 = nn.Linear(720, 100)
-        self.fc2 = nn.Linear(100, 2)
+        self.bn2 = nn.BatchNorm2d(64)
+        self.bn3 = nn.BatchNorm2d(32)
+        self.bn4 = nn.BatchNorm2d(16)
+        self.bn5 = nn.BatchNorm1d(144)
+        self.drop2 = nn.Dropout(0.2)
+        self.fc1 = nn.Linear(144, 100)
+        self.fc2 = nn.Linear(100,10)
+        self.fc3 = nn.Linear(10,2)
 
     def forward(self, x):
         """
@@ -151,13 +166,18 @@ class CNN(Model):
             Input -> Convolution -> BatchNorm -> Activation(ReLu) -> Maxpooling -> Output
         """
         # 1st layer
-        x = F.max_pool2d(F.relu(self.bn1(self.conv1(x))), kernel_size=2)
+        x = F.max_pool2d(F.relu(self.bn1(self.conv1(x))), kernel_size=3)
+        x = self.drop2(x)
         # 2nd layer
         x = F.max_pool2d(F.relu(self.bn2(self.conv2(x))), kernel_size=2)
         # 3rd layer
-        x = F.relu(self.fc1(self.bn3(x.view(x.size()[0], -1))))
+        x = F.max_pool2d(F.relu(self.bn3(self.conv3(x))), kernel_size = 2)
+        x = F.max_pool2d(F.relu(self.bn4(self.conv4(x))), kernel_size = 2)
+        x = self.drop1(x)
+        x = F.relu(self.fc1(self.bn5(x.view(x.size()[0], -1))))
         # 4th layer
-        x = self.fc2(F.dropout(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
 
         return x
 

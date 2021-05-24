@@ -38,7 +38,7 @@ class Model(nn.Module):
 
     sets_size = 1000
 
-    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3):
+    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=5e-3):
         super().__init__()
         self.generate_data = f_gen_data
         self.epochs = nb_epochs
@@ -84,7 +84,7 @@ class Model(nn.Module):
     def _train(self, train_input, train_target, train_classes):
         """ Train the model """
         criterion = nn.CrossEntropyLoss()
-        optimizer = optim.SGD(self.parameters(), self.lr)
+        optimizer = optim.Adam(self.parameters(), self.lr)
 
         losses = []
 
