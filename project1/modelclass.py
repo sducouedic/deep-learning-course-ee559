@@ -103,6 +103,8 @@ class Model(nn.Module):
 
                 else:
                     final_class = self(train_input.narrow(0, b, self.batch_size))
+                    print(final_class.size())
+                    print(train_target.size())
                     loss = criterion(final_class, train_target.narrow(0, b, self.batch_size))
 
                 self.zero_grad()

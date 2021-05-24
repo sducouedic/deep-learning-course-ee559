@@ -130,15 +130,13 @@ class Auxiliary(Model):
 #         return x
 
 class CNN(Model):
-    """
-    Models with weight sharing.
-    """
+    """ This model implements weight sharing """
 
     def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3):
         super().__init__(f_gen_data, nb_epochs, mini_batch_size, learning_rate)
 
         self.conv1 = nn.Conv2d(2, 16, kernel_size=5, padding=3)
-        self.conv2 = nn.Conv2d(16, 20, kernel_size=3, padding=3)
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=3, padding=3)
         self.bn1 = nn.BatchNorm2d(16)
         self.bn2 = nn.BatchNorm2d(20)
         self.bn3 = nn.BatchNorm1d(720)
