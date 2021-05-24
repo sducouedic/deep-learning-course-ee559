@@ -34,7 +34,7 @@ def train_and_test_rounds(model, nb_rounds, test_id):
 
 
 def main():
-    number_rounds = 5
+    number_rounds = 10
 
     model1 = Baseline(generate_pair_sets)
     mRes1 = train_and_test_rounds(model1, number_rounds, "Baseline")
@@ -50,9 +50,6 @@ def main():
 
     plot_model_result(mRes3, number_rounds)
     plot_models_results_comparison([mRes1, mRes2, mRes3, mRes4], number_rounds, True)
-
-    # plot_model_result(mRes2, number_rounds)
-    # plot_models_results_comparison([mRes1, mRes2], number_rounds, True)
 
 
 if __name__ == '__main__':

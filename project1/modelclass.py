@@ -4,6 +4,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from torch import optim
+from dlc_practical_prologue import *
 
 
 class Model(nn.Module):
@@ -38,7 +39,7 @@ class Model(nn.Module):
 
     sets_size = 1000
 
-    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3):
+    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=5e-3):
         super().__init__()
         self.generate_data = f_gen_data
         self.epochs = nb_epochs
@@ -69,6 +70,8 @@ class Model(nn.Module):
         train_input, train_target, train_classes, \
             test_input, test_target, test_classes = self.generate_data(self.sets_size)
 
+        train_input, test_input = standardize(train_input, test_input)
+
         if self.useAuxiliary:
             train_input = train_input.view(-1, 1, 14, 14)
             train_classes = train_classes.view(-1)
@@ -84,7 +87,7 @@ class Model(nn.Module):
     def _train(self, train_input, train_target, train_classes):
         """ Train the model """
         criterion = nn.CrossEntropyLoss()
-        optimizer = optim.SGD(self.parameters(), self.lr)
+        optimizer = optim.Adam(self.parameters(), self.lr)
 
         losses = []
 
@@ -103,8 +106,6 @@ class Model(nn.Module):
 
                 else:
                     final_class = self(train_input.narrow(0, b, self.batch_size))
-                    print(final_class.size())
-                    print(train_target.size())
                     loss = criterion(final_class, train_target.narrow(0, b, self.batch_size))
 
                 self.zero_grad()
