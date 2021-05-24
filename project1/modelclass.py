@@ -93,7 +93,6 @@ class Model(nn.Module):
             for b in range(0, train_input.size(0), self.batch_size):
                 if self.useAuxiliary:
                     digit_class, final_class = self(train_input.narrow(0, b, self.batch_size))
-                    # print(final_class.size(), " ", train_target.narrow(0, b // 2, self.batch_size // 2).size(), "\n")
                     loss = \
                         criterion(
                             # loss for digit classification

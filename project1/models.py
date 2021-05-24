@@ -8,30 +8,48 @@ from torch import optim
 from modelclass import Model
 
 
+
 class Baseline(Model):
     """ The Baseline model is composed only of fully-connected layers. """
 
     def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3):
         super().__init__(f_gen_data, nb_epochs, mini_batch_size, learning_rate)
 
-        self.fc1 = nn.Linear(98, 200)
-        self.bn1 = nn.BatchNorm1d(200)
-        self.drop = nn.Dropout(0.5)
-        self.fc2 = nn.Linear(200, 100)
+        # layer 1
+        self.fc1 = nn.Linear(392, 160)
+        self.bn1 = nn.BatchNorm1d(160)
+        self.drop1 = nn.Dropout(0.5)
+
+        # layer 2
+        self.fc2 = nn.Linear(80, 100)
         self.bn2 = nn.BatchNorm1d(100)
-        self.fc3 = nn.Linear(100, 100)
-        self.bn3 = nn.BatchNorm1d(100)
-        self.fc4 = nn.Linear(100, 10)
-        self.fc5 = nn.Linear(10, 2)
+        self.drop2 = nn.Dropout(0.5)
+
+        # layer 3
+        self.fc3 = nn.Linear(50, 10)
+
+        # layer 4
+        self.fc4 = nn.Linear(10, 2)
+        print(sum(p.numel() for p in self.parameters() if p.requires_grad))
 
     def forward(self, x):
-        x = F.max_pool2d(x, kernel_size=2)
-        x = F.relu(self.bn1(self.fc1(x.view(x.size()[0], -1))))
-        x = self.drop(x)
-        x = F.relu(self.bn2(self.fc2(x)))
-        x = F.relu(self.bn3(self.fc3(x)))
-        x = F.relu(self.fc4(x))
-        x = self.fc5(x)
+        n = x.size()[0]
+
+        # layer 1
+        x = F.relu(self.bn1(self.fc1(x.view(n, -1))))
+        x = F.max_pool1d(x.view(n, 1, -1), kernel_size=2)
+        x = self.drop1(x)
+
+        # layer 2
+        x = F.relu(self.bn2(self.fc2(x.view(n, -1))))
+        x = F.max_pool1d(x.view(n, 1, -1), kernel_size=2)
+        x = self.drop2(x)
+
+        # layer 3
+        x = F.relu(self.fc3(x.view(n, -1)))
+
+        # layer 4
+        x = self.fc4(x)
         return x
 
     def reset(self):
@@ -47,19 +65,42 @@ class Auxiliary(Model):
         # tell parent class we use auxiliary loss
         self.useAuxiliary = True
 
-        self.fc1 = nn.Linear(196, 200)
-        self.fc2 = nn.Linear(200, 100)
-        self.fc3 = nn.Linear(100, 10)
-        self.fc4 = nn.Linear(10, 2)
+        # layer 1
+        self.fc1 = nn.Linear(196, 160)
+        self.bn1 = nn.BatchNorm1d(160)
+        self.drop1 = nn.Dropout(0.5)
+
+        # layer 2
+        self.fc2 = nn.Linear(80, 100)
+        self.bn2 = nn.BatchNorm1d(100)
+        self.drop2 = nn.Dropout(0.5)
+
+        # layer 3 : digit classification
+        self.fc3 = nn.Linear(50, 10)
+
+        # layer 4 : digit comparison
+        self.fc4 = nn.Linear(20, 2)
+        print(sum(p.numel() for p in self.parameters() if p.requires_grad))
 
     def forward(self, x):
-        x = F.relu(self.fc1(x.view(x.size()[0], -1)))
-        x = F.relu(self.fc2(x))
-        digit_class = self.fc3(x)
+        n = x.size()[0]
 
+        # layer 1
+        x = F.relu(self.bn1(self.fc1(x.view(n, -1))))
+        x = F.max_pool1d(x.view(n, 1, -1), kernel_size=2)
+        x = self.drop1(x)
+
+        # layer 2
+        x = F.relu(self.bn2(self.fc2(x.view(n, -1))))
+        x = F.max_pool1d(x.view(n, 1, -1), kernel_size=2)
+        x = self.drop2(x)
+
+        # layer 3 : digit classification
+        digit_class = self.fc3(x.view(n, -1))
         x = F.relu(digit_class)
-        x = F.relu(self.fc4(x))
-        final_class = x.view(x.size()[0] // 2, -1)
+
+        # layer 4 : digit comparison
+        final_class = self.fc4(x.view(x.size()[0] // 2, -1))
         return digit_class, final_class
 
     def reset(self):
@@ -99,8 +140,10 @@ class CNN(Model):
 
         # 7th layer : fully-connected (digit comparison)
         self.fc3 = nn.Linear(10, 2)
+        print(sum(p.numel() for p in self.parameters() if p.requires_grad))
 
     def forward(self, x):
+
         # layer 1
         x = F.max_pool2d(F.relu(self.bn1(self.conv1(x))), kernel_size=3)
         x = self.drop1(x)
@@ -166,9 +209,9 @@ class CNN_Auxiliary(Model):
 
         # 7th layer : fully-connected (digit comparison)
         self.fc3 = nn.Linear(20, 2)
+        print(sum(p.numel() for p in self.parameters() if p.requires_grad))
 
     def forward(self, x):
-
         # layer 1
         x = F.max_pool2d(F.relu(self.bn1(self.conv1(x))), kernel_size=3)
         x = self.drop1(x)
@@ -192,8 +235,7 @@ class CNN_Auxiliary(Model):
         x = F.relu(digit_class)
 
         # layer 7 : digit comparison
-        # print(x.size())
-        # print(x.view(x.size()[0] // 2, -1).size())
+        # artificially create two channel
         final_class = self.fc3(x.view(x.size()[0] // 2, -1))
         return digit_class, final_class
 
