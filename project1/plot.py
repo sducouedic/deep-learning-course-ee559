@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 
 
 class ModelResult:
+    """ Encapsulates the the different error rates and losses of a model """
+
     def __init__(self, result_id, train_err_rates, test_err_rates, losses):
         self.id = result_id
         self.train_err_rates = train_err_rates

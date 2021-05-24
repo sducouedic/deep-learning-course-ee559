@@ -4,7 +4,6 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from torch import optim
-from dlc_practical_prologue import *
 
 
 class Model(nn.Module):
@@ -70,8 +69,7 @@ class Model(nn.Module):
         train_input, train_target, train_classes, \
             test_input, test_target, test_classes = self.generate_data(self.sets_size)
 
-        train_input, test_input = standardize(train_input, test_input)
-
+        # one channel with the original channel's images in alternation
         if self.useAuxiliary:
             train_input = train_input.view(-1, 1, 14, 14)
             train_classes = train_classes.view(-1)
@@ -93,16 +91,21 @@ class Model(nn.Module):
 
         for e in range(self.epochs):
             for b in range(0, train_input.size(0), self.batch_size):
-
                 if self.useAuxiliary:
                     digit_class, final_class = self(train_input.narrow(0, b, self.batch_size))
-                    loss = criterion(
-                        final_class,
-                        train_target.narrow(0, b // 2, self.batch_size // 2)
-                    ) + criterion(
-                        digit_class,
-                        train_classes.narrow(0, b, self.batch_size)
-                    )
+                    # print(final_class.size(), " ", train_target.narrow(0, b // 2, self.batch_size // 2).size(), "\n")
+                    loss = \
+                        criterion(
+                            # loss for digit classification
+                            digit_class,
+                            train_classes.narrow(0, b, self.batch_size)
+                        ) + criterion(
+                            # loss for comparison
+                            final_class,
+                            # need to divide by two, because one iteration in the network does
+                            # two times less comparisons (single channel)
+                            train_target.narrow(0, b // 2, self.batch_size // 2)
+                        )
 
                 else:
                     final_class = self(train_input.narrow(0, b, self.batch_size))

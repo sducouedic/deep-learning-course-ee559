@@ -38,33 +38,6 @@ class Baseline(Model):
         self.__init__(self.generate_data, self.epochs, self.batch_size, self.lr)
 
 
-# TODO make this work and compare
-# class Baseline2(Model):
-#     """ The Baseline model is composed only of fully-connected layers. """
-#
-#     def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=50, learning_rate=1e-3):
-#         super().__init__(f_gen_data, nb_epochs, mini_batch_size, learning_rate)
-#
-#         self.fc1 = nn.Linear(392, 200)
-#         self.bn1 = nn.BatchNorm1d(200)
-#         self.fc2 = nn.Linear(200, 100)
-#         self.bn2 = nn.BatchNorm1d(100)
-#         self.fc3 = nn.Linear(100, 10)
-#         self.fc4 = nn.Linear(10, 2)
-#
-#     def forward(self, x):
-#         x = F.max_pool1d(x, kernel_size=2)
-#         x = F.relu(self.bn1(self.fc1(x.view(x.size()[0], -1))))
-#         x = F.relu(self.bn2(self.fc2(x)))
-#
-#         x = F.relu(self.fc3(x))
-#         x = F.relu(self.fc4(x))
-#         return x
-#
-#     def reset(self):
-#         self.__init__(self.generate_data, self.epochs, self.batch_size, self.lr)
-
-
 class Auxiliary(Model):
     """ This model extends the baseline model by adding auxiliary loss """
 
@@ -121,29 +94,35 @@ class CNN(Model):
         # 5th layer : fully-connected
         self.fc1 = nn.Linear(144, 100)
 
-        # 6th layer : fully-connected
+        # 6th layer : fully-connected (digit classification)
         self.fc2 = nn.Linear(100, 10)
 
-        # 7th layer : fully-connected
+        # 7th layer : fully-connected (digit comparison)
         self.fc3 = nn.Linear(10, 2)
 
     def forward(self, x):
-        # print(sum(p.numel() for p in self.parameters() if p.requires_grad))
+        # layer 1
         x = F.max_pool2d(F.relu(self.bn1(self.conv1(x))), kernel_size=3)
         x = self.drop1(x)
 
+        # layer 2
         x = F.max_pool2d(F.relu(self.bn2(self.conv2(x))), kernel_size=2)
         x = self.drop2(x)
 
+        # layer 3
         x = F.max_pool2d(F.relu(self.bn3(self.conv3(x))), kernel_size=2)
         x = self.drop3(x)
 
+        # layer 4
         x = F.max_pool2d(F.relu(self.bn4(self.conv4(x))), kernel_size=2)
 
+        # layer 5
         x = F.relu(self.fc1(x.view(x.size()[0], -1)))
 
+        # layer 6 : digit classification
         x = F.relu(self.fc2(x))
 
+        # layer 7 : digit comparison
         x = self.fc3(x)
         return x
 
@@ -152,7 +131,7 @@ class CNN(Model):
 
 
 class CNN_Auxiliary(Model):
-    """ This model implements weight sharing """
+    """ This model implements weight sharing uses auxiliary loss """
 
     def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3):
         super().__init__(f_gen_data, nb_epochs, mini_batch_size, learning_rate)
@@ -160,54 +139,63 @@ class CNN_Auxiliary(Model):
         # tell parent class we use auxiliary loss
         self.useAuxiliary = True
 
-        self.conv1 = nn.Conv2d(1, 32, kernel_size=5)
-        self.bn1 = nn.BatchNorm2d(32)
+        # 1st layer : convolutional
+        self.conv1 = nn.Conv2d(1, 16, kernel_size=5, padding=2)
+        self.bn1 = nn.BatchNorm2d(16)
+        self.drop1 = nn.Dropout(0.2)
 
-        self.conv2 = nn.Conv2d(32, 16, kernel_size=5)
-        self.bn2 = nn.BatchNorm2d(16)
+        # 2nd layer : convolutional
+        self.conv2 = nn.Conv2d(16, 64, kernel_size=3, padding=3)
+        self.bn2 = nn.BatchNorm2d(64)
+        self.drop2 = nn.Dropout(0.1)
 
-        self.fc1 = nn.Linear(576, 200)
-        self.fc2 = nn.Linear(200, 10)
-        self.fc3 = nn.Linear(10, 2)
+        # 3rd layer : convolutional
+        self.conv3 = nn.Conv2d(64, 32, kernel_size=3, padding=3)
+        self.bn3 = nn.BatchNorm2d(32)
+        self.drop3 = nn.Dropout(0.5)
+
+        # 4th layer : convolutional
+        self.conv4 = nn.Conv2d(32, 16, kernel_size=5, padding=3)
+        self.bn4 = nn.BatchNorm2d(16)
+
+        # 5th layer : fully-connected
+        self.fc1 = nn.Linear(144, 100)
+
+        # 6th layer : fully-connected (digit classification)
+        self.fc2 = nn.Linear(100, 10)
+
+        # 7th layer : fully-connected (digit comparison)
+        self.fc3 = nn.Linear(20, 2)
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = F.relu(self.bn1(x))
-        x = self.conv2(x)
-        x = F.relu(self.bn2(x))
-        x = x.view(x.size()[0], -1)
-        x = F.relu(self.fc1(x))
-        digit_class = self.fc2(x)
 
+        # layer 1
+        x = F.max_pool2d(F.relu(self.bn1(self.conv1(x))), kernel_size=3)
+        x = self.drop1(x)
+
+        # layer 2
+        x = F.max_pool2d(F.relu(self.bn2(self.conv2(x))), kernel_size=2)
+        x = self.drop2(x)
+
+        # layer 3
+        x = F.max_pool2d(F.relu(self.bn3(self.conv3(x))), kernel_size=2)
+        x = self.drop3(x)
+
+        # layer 4
+        x = F.max_pool2d(F.relu(self.bn4(self.conv4(x))), kernel_size=2)
+
+        # layer 5
+        x = F.relu(self.fc1(x.view(x.size()[0], -1)))
+
+        # layer 6 : digit classification
+        digit_class = F.relu(self.fc2(x))
         x = F.relu(digit_class)
-        x = F.relu(self.fc3(x))
-        final_class = x.view(x.size()[0] // 2, -1)
 
+        # layer 7 : digit comparison
+        # print(x.size())
+        # print(x.view(x.size()[0] // 2, -1).size())
+        final_class = self.fc3(x.view(x.size()[0] // 2, -1))
         return digit_class, final_class
-
-    def _train(self, train_input, train_target, train_classes):
-        criterion = nn.CrossEntropyLoss()
-        optimizer = optim.SGD(self.parameters(), self.lr)
-
-        losses = []
-
-        for e in range(self.epochs):
-            for b in range(0, train_input.size(0), self.batch_size):
-                digit_class, final_class = self(train_input.narrow(0, b, self.batch_size))
-
-                regLoss = criterion(final_class,
-                                    train_target.narrow(0, b // 2, self.batch_size // 2))
-
-                auxLoss = criterion(digit_class, train_classes.narrow(0, b, self.batch_size))
-                loss = regLoss + auxLoss
-
-                self.zero_grad()
-                loss.backward()
-                optimizer.step()
-
-                losses.append(loss.data.item())
-
-        return losses
 
     def reset(self):
         self.__init__(self.generate_data, self.epochs, self.batch_size, self.lr)
