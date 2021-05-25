@@ -108,6 +108,10 @@ def plot_test_err_rates_means(model_results):
     means = [mean(mod_res.test_err_rates) for mod_res in model_results]
     stds = [std(mod_res.test_err_rates) for mod_res in model_results]
 
+    for k in zip(means, stds):
+        print(k[0], " ", k[1])
+    print()
+
     ax.bar(names, means, color=colors[0:len(model_results)], yerr=stds, capsize=4)
 
     plt.savefig("results/test_err_avg" + concat_models_names(model_results) + ".png")

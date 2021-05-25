@@ -34,7 +34,7 @@ class Model(nn.Module):
 
     sets_size = 1000
 
-    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=5e-3, l2_rate=0.1):
+    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=5e-3, l2_rate=0):
         super().__init__()
         self.generate_data = f_gen_data
         self.epochs = nb_epochs

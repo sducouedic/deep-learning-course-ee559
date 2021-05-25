@@ -11,7 +11,7 @@ from modelclass import Model
 class Baseline(Model):
     """ The Baseline model is composed only of fully-connected layers. """
 
-    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3, l2_rate=0):
+    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3, l2_rate=1e-3):
         super().__init__(f_gen_data, nb_epochs, mini_batch_size, learning_rate, l2_rate)
 
         # layer 1
@@ -58,7 +58,7 @@ class Baseline(Model):
 class Auxiliary(Model):
     """ This model extends the baseline model by adding auxiliary loss """
 
-    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=2e-2, l2_rate=0):
+    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=2e-2, l2_rate=1e-3):
         super().__init__(f_gen_data, nb_epochs, mini_batch_size, learning_rate, l2_rate)
 
         # tell parent class we use auxiliary loss
@@ -125,7 +125,6 @@ class CNN(Model):
         # 3rd layer : convolutional
         self.conv3 = nn.Conv2d(64, 32, kernel_size=3, padding=3)
         self.bn3 = nn.BatchNorm2d(32)
-        # self.drop3 = nn.Dropout(0.5)
 
         # 4th layer : convolutional
         self.conv4 = nn.Conv2d(32, 16, kernel_size=5, padding=3)
@@ -193,7 +192,6 @@ class CNN_Auxiliary(Model):
         # 3rd layer : convolutional
         self.conv3 = nn.Conv2d(64, 32, kernel_size=3, padding=3)
         self.bn3 = nn.BatchNorm2d(32)
-        self.drop3 = nn.Dropout(0.5)
 
         # 4th layer : convolutional
         self.conv4 = nn.Conv2d(32, 16, kernel_size=5, padding=3)
@@ -220,7 +218,6 @@ class CNN_Auxiliary(Model):
 
         # layer 3
         x = F.max_pool2d(F.relu(self.bn3(self.conv3(x))), kernel_size=2)
-        x = self.drop3(x)
 
         # layer 4
         x = F.max_pool2d(F.relu(self.bn4(self.conv4(x))), kernel_size=2)
