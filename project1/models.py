@@ -53,7 +53,7 @@ class Baseline(Model):
         return x
 
     def reset(self):
-        self.__init__(self.generate_data, self.epochs, self.batch_size, self.lr)
+        self.__init__(self.generate_data, self.epochs, self.batch_size, self.lr, self.l2)
 
 
 class Auxiliary(Model):
@@ -105,7 +105,7 @@ class Auxiliary(Model):
         return digit_class, final_class
 
     def reset(self):
-        self.__init__(self.generate_data, self.epochs, self.batch_size, self.lr)
+        self.__init__(self.generate_data, self.epochs, self.batch_size, self.lr, self.l2)
 
 
 class CNN(Model):
@@ -165,7 +165,7 @@ class CNN(Model):
         return x
 
     def reset(self):
-        self.__init__(self.generate_data, self.epochs, self.batch_size, self.lr)
+        self.__init__(self.generate_data, self.epochs, self.batch_size, self.lr, self.l2)
 
 
 class CNN_Auxiliary(Model):
@@ -230,5 +230,47 @@ class CNN_Auxiliary(Model):
         return digit_class, final_class
 
     def reset(self):
-        self.__init__(self.generate_data, self.epochs, self.batch_size, self.lr)
+        self.__init__(self.generate_data, self.epochs, self.batch_size, self.lr, self.l2)
 
+
+class final_model(Model):
+    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-2,
+                 l2_rate=0):
+        super().__init__(f_gen_data, nb_epochs, mini_batch_size, learning_rate, l2_rate)
+
+        self.conv1a = nn.Conv2d(1, 16, kernel_size=3, padding=1, dilation=1, stride=1)
+        self.conv2_drop1a = nn.Dropout2d(p=0.5)
+        self.bn = nn.BatchNorm2d(16)
+        self.conv2a = nn.Conv2d(16, 16, kernel_size=2, padding=1, dilation=1, stride=1)
+        self.conv2_drop2a = nn.Dropout2d(p=0.5)
+
+        self.transfa = nn.Sequential(nn.Dropout(), nn.Linear(1600, 40), nn.ReLU(),
+                                     nn.Linear(40, 20), nn.Dropout(), nn.Linear(20, 10))
+        self.transf = nn.Sequential(nn.ReLU(), nn.Linear(20, 2))
+
+    def forward(self, x):
+        xa = x[:, 0, :, :].unsqueeze(1)
+        xb = x[:, 1, :, :].unsqueeze(1)
+
+        xa = F.max_pool2d(F.relu(self.bn(self.conv2_drop1a(self.conv1a(xa)))), padding=1,
+                          kernel_size=2, stride=2)
+        xa = F.max_pool2d(F.relu(self.bn(self.conv2_drop2a(self.conv2a(xa)))), padding=1,
+                          kernel_size=2, stride=1)
+        xa = self.transfa(xa.view(-1, 1600))
+
+        digitResa = xa
+        xa = F.relu(xa)
+
+        xb = F.max_pool2d(F.relu(self.bn(self.conv2_drop1a(self.conv1a(xb)))), padding=1,
+                          kernel_size=2, stride=2)
+        xb = F.max_pool2d(F.relu(self.bn(self.conv2_drop2a(self.conv2a(xb)))), padding=1,
+                          kernel_size=2, stride=1)
+        xb = self.transfa(xb.view(-1, 1600))
+        digitResb = xb
+        xb = F.relu(xb)
+        # print(xb.shape)
+        # print(x.view(-1,6400).shape)
+        return self.transf(torch.cat((xa, xb), dim=1))
+
+    def reset(self):
+        self.__init__(self.generate_data, self.epochs, self.batch_size, self.lr, self.l2)

@@ -39,20 +39,23 @@ def train_and_test_rounds(model, nb_rounds, test_id):
 def main():
     number_rounds = 10
 
-    model1 = Baseline(generate_pair_sets)
-    mRes1 = train_and_test_rounds(model1, number_rounds, "Baseline")
+    # model1 = Baseline(generate_pair_sets)
+    # mRes1 = train_and_test_rounds(model1, number_rounds, "Baseline")
+    #
+    # model2 = Auxiliary(generate_pair_sets)
+    # mRes2 = train_and_test_rounds(model2, number_rounds, "Auxiliary")
+    #
+    # model3 = CNN(generate_pair_sets)
+    # mRes3 = train_and_test_rounds(model3, number_rounds, "CNN")
+    #
+    model4 = final_model(generate_pair_sets)
+    mRes4 = train_and_test_rounds(model4, number_rounds, "final_model")
 
-    model2 = Auxiliary(generate_pair_sets)
-    mRes2 = train_and_test_rounds(model2, number_rounds, "Auxiliary")
+    # model4 = CNN_Auxiliary(generate_pair_sets)
+    # mRes4 = train_and_test_rounds(model4, number_rounds, "CNN_Aux")
 
-    model3 = CNN(generate_pair_sets)
-    mRes3 = train_and_test_rounds(model3, number_rounds, "CNN")
-
-    model4 = CNN_Auxiliary(generate_pair_sets)
-    mRes4 = train_and_test_rounds(model4, number_rounds, "CNN_Aux")
-
-    # plot_models_results_comparison([mRes3, mRes4], number_rounds, True)
-    plot_models_results_comparison([mRes1, mRes2, mRes3, mRes4], number_rounds, True)
+    plot_models_results_comparison([mRes4], number_rounds, True)
+    # plot_models_results_comparison([mRes1, mRes2, mRes3, mRes4], number_rounds, True)
 
 
 if __name__ == '__main__':
