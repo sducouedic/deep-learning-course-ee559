@@ -15,17 +15,13 @@ class Model(nn.Module):
         sets_size : int
             the size of both the training and the testing sets
 
-        name : string
-            name of the model
-
         useAuxiliary : Boolean
             determines if the model uses auxiliary loss or not
 
         f_gen_data : function
             a function taking a an int and generating the training and testing data
 
-        batch_size : int
-            size of a mini-batch
+        epochs, batch_size, lr, l2 : hyper-parameters
 
         Methods
         -------
@@ -38,12 +34,13 @@ class Model(nn.Module):
 
     sets_size = 1000
 
-    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=5e-3):
+    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=5e-3, l2_rate=0.1):
         super().__init__()
         self.generate_data = f_gen_data
         self.epochs = nb_epochs
         self.batch_size = mini_batch_size
         self.lr = learning_rate
+        self.l2 = l2_rate
         self.useAuxiliary = False  # Need to resize tensors if True
 
     @abstractmethod
@@ -91,6 +88,8 @@ class Model(nn.Module):
 
         for e in range(self.epochs):
             for b in range(0, train_input.size(0), self.batch_size):
+
+                # if use auxiliary loss, add both digit classification and comparison loss
                 if self.useAuxiliary:
                     digit_class, final_class = self(train_input.narrow(0, b, self.batch_size))
                     loss = \
@@ -106,9 +105,14 @@ class Model(nn.Module):
                             train_target.narrow(0, b // 2, self.batch_size // 2)
                         )
 
+                # use only comparison loss
                 else:
                     final_class = self(train_input.narrow(0, b, self.batch_size))
                     loss = criterion(final_class, train_target.narrow(0, b, self.batch_size))
+
+                # L2 penalty
+                for p in self.parameters():
+                    loss += self.l2 * p.pow(2).sum()
 
                 self.zero_grad()
                 loss.backward()
