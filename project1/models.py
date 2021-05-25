@@ -11,7 +11,8 @@ from modelclass import Model
 class Baseline(Model):
     """ The Baseline model is composed only of fully-connected layers. """
 
-    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3, l2_rate=1e-3):
+    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3,
+                 l2_rate=1e-3):
         super().__init__(f_gen_data, nb_epochs, mini_batch_size, learning_rate, l2_rate)
 
         # layer 1
@@ -58,7 +59,8 @@ class Baseline(Model):
 class Auxiliary(Model):
     """ This model extends the baseline model by adding auxiliary loss """
 
-    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=2e-2, l2_rate=1e-3):
+    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=2e-2,
+                 l2_rate=1e-3):
         super().__init__(f_gen_data, nb_epochs, mini_batch_size, learning_rate, l2_rate)
 
         # tell parent class we use auxiliary loss
@@ -109,18 +111,17 @@ class Auxiliary(Model):
 class CNN(Model):
     """ This model implements weight sharing """
 
-    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3, l2_rate=0.1):
+    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3,
+                 l2_rate=0.1):
         super().__init__(f_gen_data, nb_epochs, mini_batch_size, learning_rate, l2_rate)
 
         # 1st layer : convolutional
         self.conv1 = nn.Conv2d(2, 32, kernel_size=5, padding=2)
         self.bn1 = nn.BatchNorm2d(32)
-        self.drop1 = nn.Dropout(0.2)
 
         # 2nd layer : convolutional
         self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=3)
         self.bn2 = nn.BatchNorm2d(64)
-        self.drop2 = nn.Dropout(0.1)
 
         # 3rd layer : convolutional
         self.conv3 = nn.Conv2d(64, 32, kernel_size=3, padding=3)
@@ -143,15 +144,12 @@ class CNN(Model):
     def forward(self, x):
         # layer 1
         x = F.max_pool2d(F.relu(self.bn1(self.conv1(x))), kernel_size=3)
-        x = self.drop1(x)
 
         # layer 2
         x = F.max_pool2d(F.relu(self.bn2(self.conv2(x))), kernel_size=2)
-        x = self.drop2(x)
 
         # layer 3
         x = F.max_pool2d(F.relu(self.bn3(self.conv3(x))), kernel_size=2)
-        # x = self.drop3(x)
 
         # layer 4
         x = F.max_pool2d(F.relu(self.bn4(self.conv4(x))), kernel_size=2)
@@ -173,7 +171,8 @@ class CNN(Model):
 class CNN_Auxiliary(Model):
     """ This model implements weight sharing uses auxiliary loss """
 
-    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3, l2_rate=0.1):
+    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3,
+                 l2_rate=0.1):
         super().__init__(f_gen_data, nb_epochs, mini_batch_size, learning_rate, l2_rate)
 
         # tell parent class we use auxiliary loss
@@ -182,12 +181,10 @@ class CNN_Auxiliary(Model):
         # 1st layer : convolutional
         self.conv1 = nn.Conv2d(1, 32, kernel_size=5, padding=2)
         self.bn1 = nn.BatchNorm2d(32)
-        self.drop1 = nn.Dropout(0.2)
 
         # 2nd layer : convolutional
         self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=3)
         self.bn2 = nn.BatchNorm2d(64)
-        self.drop2 = nn.Dropout(0.1)
 
         # 3rd layer : convolutional
         self.conv3 = nn.Conv2d(64, 32, kernel_size=3, padding=3)
@@ -210,11 +207,9 @@ class CNN_Auxiliary(Model):
     def forward(self, x):
         # layer 1
         x = F.max_pool2d(F.relu(self.bn1(self.conv1(x))), kernel_size=3)
-        x = self.drop1(x)
 
         # layer 2
         x = F.max_pool2d(F.relu(self.bn2(self.conv2(x))), kernel_size=2)
-        x = self.drop2(x)
 
         # layer 3
         x = F.max_pool2d(F.relu(self.bn3(self.conv3(x))), kernel_size=2)
@@ -236,3 +231,4 @@ class CNN_Auxiliary(Model):
 
     def reset(self):
         self.__init__(self.generate_data, self.epochs, self.batch_size, self.lr)
+
