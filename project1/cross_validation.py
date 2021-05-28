@@ -9,7 +9,7 @@ Created on Wed May 26 12:02:35 2021
 # ------------------------------------ Disclaimer --------------------------------------
 # This is the 2-fold cross-validation script we used to get the best possible parameters.
 # However the architectures were adapted especially for this script to be able to run
-# which is no more the case. Do not run this file as it won't produce the exprected results
+# which is no more the case. Do not run this file as it won't produce the expected results
 # we added it only for you to see our work.
 # --------------------------------------------------------------------------------------
 # ======================================================================================
