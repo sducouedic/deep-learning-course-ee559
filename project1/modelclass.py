@@ -1,5 +1,5 @@
 from abc import abstractmethod
-
+from dlc_practical_prologue import standardize,normalize_min_max
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -65,7 +65,8 @@ class Model(nn.Module):
 
         train_input, train_target, train_classes, \
             test_input, test_target, test_classes = self.generate_data(self.sets_size)
-
+        train_input, test_input = standardize(train_input, test_input)
+        #train_input, test_input = normalize_min_max(train_input, test_input)
         # one channel with the original channel's images in alternation
         if self.useAuxiliary:
             train_input = train_input.view(-1, 1, 14, 14)
@@ -127,21 +128,19 @@ class Model(nn.Module):
     def __compute_errors(self, data_input, data_target):
         """ Computes the number of errors produced by the model """
         nb_data_errors = 0
-
         for b in range(0, data_input.size(0), self.batch_size):
 
             output = self(data_input.narrow(0, b, self.batch_size))
 
             if self.useAuxiliary:
                 output = output[1]
-
             _, predicted_classes = torch.max(output, 1)
-
+            
             target_b = b if not self.useAuxiliary else b // 2
             target_batch_size = self.batch_size if not self.useAuxiliary else self.batch_size // 2
 
             for k in range(target_batch_size):
                 if data_target[target_b + k] != predicted_classes[k]:
                     nb_data_errors = nb_data_errors + 1
-
+                
         return 100 * nb_data_errors / data_input.size(0)
