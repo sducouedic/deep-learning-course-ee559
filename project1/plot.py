@@ -71,6 +71,11 @@ def plot_train_err_rates_means(model_results):
     means = [mean(mod_res.train_err_rates) for mod_res in model_results]
     stds = [std(mod_res.train_err_rates) for mod_res in model_results]
 
+    print("train error rates")
+    for k in zip(means, stds):
+        print(k[0], "% +- ", k[1], "%")
+    print()
+
     ax.bar(names, means, color=colors[0:len(model_results)], yerr=stds, capsize=4)
 
     plt.savefig("results/train_err_avg" + concat_models_names(model_results) + ".png")
@@ -108,8 +113,9 @@ def plot_test_err_rates_means(model_results):
     means = [mean(mod_res.test_err_rates) for mod_res in model_results]
     stds = [std(mod_res.test_err_rates) for mod_res in model_results]
 
+    print("test error rates")
     for k in zip(means, stds):
-        print(k[0], " ", k[1])
+        print(k[0], "% +- ", k[1], "%")
     print()
 
     ax.bar(names, means, color=colors[0:len(model_results)], yerr=stds, capsize=4)

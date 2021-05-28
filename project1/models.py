@@ -30,7 +30,6 @@ class Baseline(Model):
 
         # layer 4
         self.fc4 = nn.Linear(10, 2)
-        print(sum(p.numel() for p in self.parameters() if p.requires_grad))
 
     def forward(self, x):
         n = x.size()[0]
@@ -56,7 +55,7 @@ class Baseline(Model):
         self.__init__(self.generate_data, self.epochs, self.batch_size, self.lr, self.l2)
 
 
-class Auxiliary(Model):
+class Base_Aux(Model):
     """ This model extends the baseline model by adding auxiliary loss """
 
     def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=0.0056,
@@ -81,7 +80,6 @@ class Auxiliary(Model):
 
         # layer 4 : digit comparison
         self.fc4 = nn.Linear(20, 2)
-        print(sum(p.numel() for p in self.parameters() if p.requires_grad))
 
     def forward(self, x):
         n = x.size()[0]
@@ -111,8 +109,8 @@ class Auxiliary(Model):
 class CNN(Model):
     """ This model implements weight sharing """
 
-    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=0.001,
-                 l2_rate=0.3):
+    def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=1e-3,
+                 l2_rate=0.1):
         super().__init__(f_gen_data, nb_epochs, mini_batch_size, learning_rate, l2_rate)
 
         # 1st layer : convolutional
@@ -134,7 +132,6 @@ class CNN(Model):
         self.fc2 = nn.Linear(100, 10)
         # 7th layer : fully-connected (digit comparison)
         self.fc3 = nn.Linear(10, 2)
-        print(sum(p.numel() for p in self.parameters() if p.requires_grad))
 
     def forward(self, x):
         # layer 1
@@ -159,7 +156,7 @@ class CNN(Model):
         self.__init__(self.generate_data, self.epochs, self.batch_size, self.lr, self.l2)
 
 
-class CNN_Auxiliary(Model):
+class CNN_Aux(Model):
     """ This model implements weight sharing uses auxiliary loss """
 
     def __init__(self, f_gen_data, nb_epochs=25, mini_batch_size=100, learning_rate=0.00223,
@@ -193,7 +190,6 @@ class CNN_Auxiliary(Model):
 
         # 7th layer : fully-connected (digit comparison)
         self.fc3 = nn.Linear(20, 2)
-        print(sum(p.numel() for p in self.parameters() if p.requires_grad))
 
     def forward(self, x):
         # layer 1
