@@ -65,8 +65,7 @@ class Model(nn.Module):
 
         train_input, train_target, train_classes, \
             test_input, test_target, test_classes = self.generate_data(self.sets_size)
-        train_input, test_input = standardize(train_input, test_input)
-        #train_input, test_input = normalize_min_max(train_input, test_input)
+
         # one channel with the original channel's images in alternation
         if self.useAuxiliary:
             train_input = train_input.view(-1, 1, 14, 14)

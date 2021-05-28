@@ -51,6 +51,10 @@ def main():
     model4 = CNN_Aux(generate_pair_sets)
     mRes4 = train_and_test_rounds(model4, number_rounds, "CNN_Aux")
 
+    plot_model_result(mRes1, number_rounds)
+    plot_model_result(mRes2, number_rounds)
+    plot_model_result(mRes3, number_rounds)
+    plot_model_result(mRes4, number_rounds)
     plot_models_results_comparison([mRes1, mRes2, mRes3, mRes4], number_rounds, True)
 
 
